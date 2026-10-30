@@ -108,6 +108,12 @@ section.band{padding-block:clamp(48px,7vw,84px)}
 .loc span{display:block;color:var(--dust);font-size:.92rem}
 .loc .xz{font-family:var(--mono);font-size:.85rem;color:var(--dust);white-space:nowrap;font-variant-numeric:tabular-nums}
 .tiermap{display:block;width:100%;height:auto;border-radius:6px}
+.maptabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.maptabs button{flex:1 1 140px;font-family:var(--cond);font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-size:.92rem;padding:9px 10px;border-radius:6px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--dust);cursor:pointer}
+.maptabs button[aria-selected="true"]{background:rgba(255,179,71,.14);border-color:rgba(255,179,71,.55);color:var(--ember)}
+.lgroup{font-family:var(--cond);font-weight:600;font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ember);padding:18px 0 6px}
+.lgroup:first-child{padding-top:0}
+@media (min-width:901px){#map .map{position:sticky;top:16px}}
 .mapnote{margin-top:14px;color:var(--dust);font-size:.9rem}
 
 /* JOIN */
@@ -240,15 +246,20 @@ footer .brand{font-family:var(--display);color:var(--sand);font-size:1.1rem;lett
     </div>
   </section>
 
-  <section class="band mapband">
+  <section class="band mapband" id="map">
     <div class="wrap">
       <div class="head">
-        <div class="eyebrow">Grid reference</div>
-        <h2>Trader posts and airfields</h2>
-        <p>Positions are in-game X and Z coordinates in metres. For a zoomable map with every town named, open the interactive Takistan Sequel map under the picture.</p>
+        <div class="eyebrow">Grid reference · Know your ground</div>
+        <h2>Trader posts, airfields and loot tiers</h2>
+        <p>Positions are in-game X and Z coordinates in metres. Loot gets better the further north you push: you spawn in the south, so gear up on the way and hit the north when you're ready. Switch the map below between trader posts and loot tiers, or open the zoomable Takistan Sequel map with every town named.</p>
       </div>
       <div class="mapgrid">
         <div class="map">
+          <div class="maptabs" role="tablist" aria-label="Map view">
+            <button type="button" role="tab" id="tab-traders" aria-selected="true" aria-controls="view-traders">Traders &amp; airfields</button>
+            <button type="button" role="tab" id="tab-tiers" aria-selected="false" aria-controls="view-tiers">Loot tiers &amp; bunker run</button>
+          </div>
+          <div id="view-traders" role="tabpanel" aria-labelledby="tab-traders">
           <svg viewBox="0 0 400 400" role="img" aria-label="Satellite map of Takistan, 12.8 km square, with the trader posts and airfields marked">
             <defs>
               <pattern id="g" width="31.25" height="31.25" patternUnits="userSpaceOnUse"><path d="M31.25 0H0V31.25" fill="none" stroke="#3a3027" stroke-width=".6"/></pattern>
@@ -271,9 +282,15 @@ footer .brand{font-family:var(--display);color:var(--sand);font-size:1.1rem;lett
               <circle cx="248.1" cy="340.6" r="9" fill="#9bb24a"/><text x="248.1" y="344.8" text-anchor="middle" fill="#14110e">B</text>
             </g>
           </svg>
+          </div>
+          <div id="view-tiers" role="tabpanel" aria-labelledby="tab-tiers" hidden>
+            <img class="tiermap" src="tier-map.jpg" alt="Takistan Sequel loot tier map: Tier 1 and the spawn zone in the south, Tier 2 across the middle, Tier 3 in the north, with the bunker run marked in the north-west" width="1280" height="1280" loading="lazy">
+          </div>
           <a class="imaplink" href="https://marthieson.github.io/DayZ-tsiamap/" target="_blank" rel="noopener">Open the interactive Takistan Sequel map ↗</a>
         </div>
         <div class="legend">
+          <div class="lgroup">Trader posts &amp; airfields</div>
+
           <div class="loc"><div class="n">1</div><div><b>Main trader hub</b><span>Food, tools, weapons, ammo, military, medical, armor, clothing, building, vehicles, parts, helicopters, plus bank ATMs</span></div><div class="xz">6605 · 6995</div></div>
           <div class="loc"><div class="n">2</div><div><b>Drug trader</b><span>Cannabis, cocaine, psychedelics, seeds and equipment</span></div><div class="xz">6612 · 4573</div></div>
           <div class="loc"><div class="n">3</div><div><b>Hunting trader</b><span>Rifles, hunting supplies, horse and camel gear; buys pelts and meat</span></div><div class="xz">6325 · 4782</div></div>
@@ -281,29 +298,17 @@ footer .brand{font-family:var(--display);color:var(--sand);font-size:1.1rem;lett
           <div class="loc"><div class="n">5</div><div><b>Collectables and High-end</b><span>Every collectible and teddy bear, plus top-tier gear</span></div><div class="xz">1828 · 7596</div></div>
           <div class="loc air"><div class="n">A</div><div><b>Military airfield</b><span>Hangars and military loot</span></div><div class="xz">5650 · 11190</div></div>
           <div class="loc air"><div class="n">B</div><div><b>Southern airstrip</b><span>Hangars and a quiet runway</span></div><div class="xz">7940 · 1900</div></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="band mapband">
-    <div class="wrap">
-      <div class="head">
-        <div class="eyebrow">Know your ground</div>
-        <h2>Loot tiers and the bunker run</h2>
-        <p>Loot gets better the further north you push. You spawn in the south, so gear up on the way and hit the north when you're ready.</p>
-      </div>
-      <div class="mapgrid">
-        <div class="map"><img class="tiermap" src="tier-map.jpg" alt="Takistan Sequel loot tier map: Tier 1 and the spawn zone in the south, Tier 2 across the middle, Tier 3 in the north, with the bunker run marked in the north-west" width="1280" height="1280" loading="lazy"></div>
-        <div class="legend">
+          <div class="lgroup">Loot tiers</div>
           <div class="loc"><div class="n">T1</div><div><b>Tier 1 · the south</b><span>Spawn zone and the southern airstrip. Common guns, ammo and survival gear.</span></div></div>
           <div class="loc"><div class="n">T2</div><div><b>Tier 2 · the middle</b><span>Better military gear and more of it. The main trader hub sits here.</span></div></div>
           <div class="loc bm"><div class="n">T3</div><div><b>Tier 3 · the north</b><span>Rasman airbase and the northern towns. The best gear above ground, with Black Market and high-end items mixed in.</span></div></div>
+          <div class="lgroup">The bunker run</div>
           <div class="loc air"><div class="n">1</div><div><b>Power up the bunker</b><span>Switch on the North Airfield bunker power station.</span></div></div>
           <div class="loc air"><div class="n">2</div><div><b>Grab a punched card</b><span>Search the North Airfield bunker at Rasman for a punched card.</span></div></div>
           <div class="loc air"><div class="n">3</div><div><b>Open the underground</b><span>Take the card to the Underground Dam Area by the Nagara hydro plant. The rarest guns on the server spawn down there, and so do its toughest infected.</span></div></div>
         </div>
       </div>
+      <p class="mapnote">Takistan Sequel is a map addon by Marthieson that extends CypeRevenge's TakistanPlus with new points of interest, a south-to-north loot progression and its own underground. It also inherits TakistanPlus's sandstorms, so watch the sky. Full credit to the original authors.</p>
     </div>
   </section>
 
@@ -370,6 +375,10 @@ footer .brand{font-family:var(--display);color:var(--sand);font-size:1.1rem;lett
   }
   init(); window.addEventListener('resize',init); requestAnimationFrame(frame);
 })();
+
+// map view tabs
+(function(){const tabs=[document.getElementById('tab-traders'),document.getElementById('tab-tiers')];if(!tabs[0])return;
+tabs.forEach(tb=>tb.addEventListener('click',()=>{tabs.forEach(o=>{const on=o===tb;o.setAttribute('aria-selected',on);document.getElementById(o.getAttribute('aria-controls')).hidden=!on;});}));})();
 </script>
 
 </body>
