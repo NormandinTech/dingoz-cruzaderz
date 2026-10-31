@@ -135,7 +135,7 @@ ol.dirs li:last-child{border-bottom:0}
       <h2>Directions</h2>
       <ol class="dirs" id="dirs"><li class="empty" style="display:block;border:0">Add a destination to get directions.</li></ol>
     </section>
-    <p class="help" style="font-size:.82rem">Only you can see your own position. Roads are traced from the map; dashed lines are off-road stretches.</p>
+    <p class="help" style="font-size:.82rem">Only you can see your own position. Roads come from the game's own road data, small dirt roads included; dashed route lines are off-road stretches.</p>
   </aside>
 </main>
 
@@ -180,7 +180,7 @@ for(const [n,x,z,k] of POIS){
 }
 // road overlay (optional)
 const roadLayer=L.layerGroup();
-for(const e of roads.edges) L.polyline(e.pts.map(p=>ll(p[0],p[1])),{color:e.major?'#ffb347':'#e9dcc6',weight:e.major?3:2,opacity:.75,interactive:false}).addTo(roadLayer);
+for(const e of roads.edges) L.polyline(e.pts.map(p=>ll(p[0],p[1])),{color:e.major?'#ffb347':'#e9dcc6',weight:e.major?3:e.kind==='path'?1:2,opacity:.75,dashArray:e.kind==='path'?'3 4':null,interactive:false}).addTo(roadLayer);
 $('roadsBtn').onclick=()=>{const on=$('roadsBtn').getAttribute('aria-pressed')!=='true';$('roadsBtn').setAttribute('aria-pressed',on);on?roadLayer.addTo(map):roadLayer.remove();};
 
 // ---------- live events ----------
@@ -214,7 +214,7 @@ drawEvents();
 
 // ---------- road graph ----------
 const N=roads.nodes.length; const adj=Array.from({length:N},()=>[]);
-roads.edges.forEach((e,i)=>{const w=e.len*(e.major?0.9:1);adj[e.a].push({to:e.b,w,ei:i,fwd:true});adj[e.b].push({to:e.a,w,ei:i,fwd:false});});
+roads.edges.forEach((e,i)=>{const w=e.len*(e.major?0.9:e.kind==='path'?1.6:1);adj[e.a].push({to:e.b,w,ei:i,fwd:true});adj[e.b].push({to:e.a,w,ei:i,fwd:false});});
 const segLen=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1]);
 // snap a point to the nearest spot on any road
 function snap(x,z){
