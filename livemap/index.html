@@ -50,6 +50,8 @@ ol.wps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap
 ol.wps li{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:7px 8px}
 .wpn{font-family:var(--mono);font-size:.82rem;text-align:center;border-radius:4px;padding:1px 0;background:var(--ember);color:var(--ground)}
 .wpn.start{background:var(--sky)}
+.leaflet-tooltip{font-family:var(--cond);font-weight:600;letter-spacing:.03em;background:#1d1915;color:#e9dcc6;border:1px solid #3a3027}
+.leaflet-tooltip-top:before{border-top-color:#3a3027}
 .wpl{font-size:.93rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wpl small{display:block;font-family:var(--mono);color:var(--dust);font-size:.78rem}
 .x{background:none;border:0;color:var(--dust);font-size:1.1rem;cursor:pointer;padding:2px 6px}
@@ -104,7 +106,7 @@ ol.dirs li:last-child{border-bottom:0}
     </section>
     <section>
       <h2>Route</h2>
-      <p class="help">Tap the map to drop a waypoint. Your live position is the start when you're in game; otherwise your first tap is the start. Drag pins to move them.</p>
+      <p class="help">Tap the map to drop a waypoint, or tap a coloured dot (trader, bunker, airfield) to route there. Your live position is the start when you're in game; otherwise your first tap is the start. Drag pins to move them.</p>
       <ol class="wps" id="wps" style="margin-top:10px"></ol>
       <div class="row" style="margin-top:10px">
         <button class="btn" id="clearBtn" type="button">Clear route</button>
@@ -148,8 +150,22 @@ const [roads,towns]=await Promise.all([fetch('roads.json').then(r=>r.json()),fet
 const townLayer=L.layerGroup().addTo(map);
 for(const [n,x,z,kind] of towns){ L.marker(ll(x,z),{interactive:false,icon:L.divIcon({className:'town '+kind,html:n,iconSize:null,iconAnchor:[0,8]})}).addTo(townLayer); }
 const nearestTown=(x,z,max)=>{let b=null,bd=max;for(const t of towns){const d=Math.hypot(t[1]-x,t[2]-z);if(d<bd){bd=d;b=t;}}return b;};
-const placeName=(x,z)=>{const t=nearestTown(x,z,900);return t?('near '+t[0]):('grid '+grid(x,z));};
+const POIS=[
+  ['Main trader hub',6605,6995,'trader'],['Drug trader',6612,4573,'trader'],['Hunting trader',6325,4782,'trader'],
+  ['Black Market',3908,9351,'bm'],['Collectables & High-end',1828,7596,'trader'],
+  ['North Airfield bunker',5840,11302,'bunker'],['Underground Dam bunker',1373,8775,'bunker'],
+  ['Rasman airbase',5650,11190,'air'],['Southern airstrip',7940,1900,'air']];
+const nearestPoi=(x,z,max)=>{let b=null,bd=max;for(const p of POIS){const d=Math.hypot(p[1]-x,p[2]-z);if(d<bd){bd=d;b=p;}}return b;};
+const placeName=(x,z,arrive)=>{const p=nearestPoi(x,z,arrive?350:150); if(p) return (arrive?'at ':'at ')+p[0]; const t=nearestTown(x,z,900);return t?('near '+t[0]):('grid '+grid(x,z));};
 
+// places of interest (tap → route there)
+const poiColor={trader:'#ffb347',bm:'#c4352b',bunker:'#5ab7e8',air:'#9bb24a'};
+const poiLayer=L.layerGroup().addTo(map);
+for(const [n,x,z,k] of POIS){
+  const m=L.circleMarker(ll(x,z),{radius:7,color:'#14110e',weight:2,fillColor:poiColor[k],fillOpacity:1}).addTo(poiLayer);
+  m.bindTooltip(n,{direction:'top',offset:[0,-6]});
+  m.on('click',ev=>{L.DomEvent.stopPropagation(ev); addWp(x,z); toast('Route to '+n+' added');});
+}
 // road overlay (optional)
 const roadLayer=L.layerGroup();
 for(const e of roads.edges) L.polyline(e.pts.map(p=>ll(p[0],p[1])),{color:e.major?'#ffb347':'#e9dcc6',weight:e.major?3:2,opacity:.75,interactive:false}).addTo(roadLayer);
@@ -215,8 +231,15 @@ function headingAt(pts,fromEnd,distWant=60){ // direction over the last/first ~6
   else{let acc=0;for(let i=1;i<pts.length;i++){acc+=segLen(pts[i-1],pts[i]);if(acc>=distWant||i===pts.length-1)return bearing(pts[0],pts[i]);}}
   return 0;
 }
+function turnWord(a){
+  const A=Math.abs(a);
+  if(A<25) return null;
+  if(A<55) return {t:a>0?'Bear right':'Bear left',ic:a>0?'↗':'↖'};
+  if(A<135) return {t:a>0?'Turn right':'Turn left',ic:a>0?'→':'←'};
+  return {t:a>0?'Sharp right':'Sharp left',ic:a>0?'↪':'↩'};
+}
 function directions(legs,dest){
-  const out=[]; let run=0, runRoad=true, lastLabel=null;
+  const out=[]; let run=0;
   const lenOf=l=>l.pts.reduce((s,p,i)=>i?s+segLen(l.pts[i-1],p):0,0);
   legs.forEach((l,i)=>{
     const L_=lenOf(l);
@@ -224,29 +247,29 @@ function directions(legs,dest){
       if(run>0){out.push({ic:'↑',t:'Follow the road',d:run});run=0;}
       const b=bearing(l.pts[0],l.pts[l.pts.length-1]);
       const toRoad=legs[i+1]&&legs[i+1].type==='road';
-      out.push({ic:'⇢',t:(i===0?'Head ':'Go ')+compass(b)+' off-road'+(toRoad?' to the road':' to your waypoint'),d:L_});
+      out.push({ic:'⇢',t:(i===0?'Head ':'Go ')+compass(b)+' off-road'+(toRoad?' to the road':' to '+placeName(dest[0],dest[1]).replace(/^near /,'')),d:L_});
       return;
     }
     run+=L_;
     const next=legs[i+1];
-    if(next&&next.type==='road'&&l.node!=null&&degree(l.node)>=3){
-      const hin=headingAt(l.pts,true), hout=headingAt(next.pts,false);
-      let a=((hout-hin+540)%360)-180; // -180..180, positive = right
-      const n=roads.nodes[l.node]; const where=placeName(n[0],n[1]);
-      let t=null, ic='↑';
-      if(Math.abs(a)<25) t=null;
-      else if(Math.abs(a)<55){t=(a>0?'Bear right':'Bear left');ic=a>0?'↗':'↖';}
-      else if(Math.abs(a)<135){t=(a>0?'Turn right':'Turn left');ic=a>0?'→':'←';}
-      else {t=(a>0?'Sharp right':'Sharp left');ic=a>0?'↪':'↩';}
-      if(t){out.push({ic:'↑',t:'Continue',d:run,hide:true});run=0;out.push({ic,t:t+' '+where,d:0,turn:true});}
+    if(!(next&&next.type==='road'&&l.node!=null&&degree(l.node)>=3)) return;
+    const hin=headingAt(l.pts,true), hout=headingAt(next.pts,false);
+    const n=roads.nodes[l.node];
+    const last=out[out.length-1];
+    // junction clusters: a second turn within 80 m is merged into the previous one
+    if(last&&last.turn&&run<80){
+      const a2=((hout-last.hin+540)%360)-180; const w=turnWord(a2);
+      if(w){Object.assign(last,{ic:w.ic,t:w.t+' '+last.where});} else out.pop();
+      return;
     }
+    const a=((hout-hin+540)%360)-180; const w=turnWord(a);
+    if(!w) return;
+    const where=placeName(n[0],n[1]);
+    out.push({ic:w.ic,t:w.t+' '+where,where,hin,d:run,turn:true}); run=0;
   });
   if(run>0) out.push({ic:'↑',t:'Follow the road',d:run});
-  out.push({ic:'⚑',t:'Arrive '+placeName(dest[0],dest[1]),d:0});
-  // fold "continue" distances into the following turn line
-  const res=[]; let carry=0;
-  for(const s of out){ if(s.hide){carry+=s.d;continue;} if(s.turn){res.push({...s,d:carry});carry=0;} else {res.push({...s,d:s.d+carry});carry=0;} }
-  return res;
+  out.push({ic:'⚑',t:'Arrive '+placeName(dest[0],dest[1],true),d:0});
+  return out;
 }
 
 // ---------- waypoints & route drawing ----------
@@ -259,7 +282,7 @@ function renderList(){
   const ol=$('wps'); ol.innerHTML='';
   if(me){const li=document.createElement('li');li.innerHTML=`<span class="wpn start">ME</span><span class="wpl">Your position<small>grid ${grid(me.x,me.z)}</small></span><span></span>`;ol.appendChild(li);}
   wps.forEach((w,i)=>{const isStart=!me&&i===0;const li=document.createElement('li');
-    li.innerHTML=`<span class="wpn${isStart?' start':''}">${isStart?'S':(me?i+1:i)}</span><span class="wpl">${placeName(w.x,w.z).replace(/^near /,'')}<small>grid ${grid(w.x,w.z)}</small></span><button class="x" type="button" aria-label="Remove waypoint">✕</button>`;
+    li.innerHTML=`<span class="wpn${isStart?' start':''}">${isStart?'S':(me?i+1:i)}</span><span class="wpl">${placeName(w.x,w.z,true).replace(/^(near|at) /,'')}<small>grid ${grid(w.x,w.z)}</small></span><button class="x" type="button" aria-label="Remove waypoint">✕</button>`;
     li.querySelector('.x').onclick=()=>{map.removeLayer(w.marker);wps.splice(i,1);relabel();update();};ol.appendChild(li);});
   if(!me&&!wps.length) ol.innerHTML='<li class="empty" style="display:block;background:none;border:0;padding:0">No waypoints yet.</li>';
 }
