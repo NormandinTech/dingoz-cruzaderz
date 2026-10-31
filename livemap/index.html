@@ -342,7 +342,7 @@ if(qs.get('login')==='failed'){toast('Steam sign-in did not complete');history.r
 update(); poll(); health();
 setInterval(()=>{ if(!document.hidden) poll(); },7000);
 setInterval(()=>{ if(!document.hidden) health(); },30000);
-window.__dz={route,snap,roads}; // for testing
+window.__dz={route,snap,roads,map,addWp,setMe}; // for testing
 })();
 </script>
 </body>
