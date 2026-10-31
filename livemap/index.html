@@ -185,7 +185,7 @@ for(const e of roads.edges) L.polyline(e.pts.map(p=>ll(p[0],p[1])),{color:e.majo
 $('roadsBtn').onclick=()=>{const on=$('roadsBtn').getAttribute('aria-pressed')!=='true';$('roadsBtn').setAttribute('aria-pressed',on);on?roadLayer.addTo(map):roadLayer.remove();};
 
 // ---------- live events ----------
-const BUNKER_GAS=[['Toxic: Underground Dam bunker',1320,8750,200],['Toxic: North Airfield bunker',5830,11310,150],['Toxic: East underground lab',10325,8215,100],['Toxic zone: high-tier loot',6004,11790,120],['Toxic zone: top-tier loot',11560,10870,130]];
+const BUNKER_GAS=[['Toxic: Underground Dam bunker',1320,8750,200],['Toxic: North Airfield bunker',5830,11310,150],['Toxic: East underground lab',10325,8215,100],['Toxic zone: high-tier loot',6004,11790,120],['Toxic zone: top-tier loot',11600,10835,130]];
 const evLayer=L.layerGroup().addTo(map); let evOn=true, evData=null;
 const ring=(x,z,r,o)=>L.circle(ll(x,z),Object.assign({radius:r,interactive:true},o));
 function drawEvents(){
