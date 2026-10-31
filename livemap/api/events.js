@@ -12,7 +12,7 @@ const TTL = 240;
 const SEARCH_R = 900;   // radius of the search circle (m)
 const MAX_OFF = 600;    // the real spot is somewhere inside, up to this far from the circle centre
 // The three always-toxic bunker zones are drawn by the page; drop scan hits that are just those.
-const BUNKERS = [[1320, 8750, 200], [5830, 11310, 150], [10325, 8215, 100], [6004, 11790, 120], [11600, 10835, 130]];
+const BUNKERS = [[1320, 8750, 120], [5830, 11310, 90], [10325, 8215, 60], [6004, 11790, 72], [11600, 10835, 78]];
 const nearBunker = ([x, z]) => BUNKERS.some(([bx, bz, r]) => Math.hypot(x - bx, z - bz) < r + 150);
 
 function keyOk(req) {
