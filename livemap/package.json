@@ -2,5 +2,8 @@
   "name": "dingoz-livemap",
   "private": true,
   "type": "module",
-  "engines": { "node": "22.x" }
+  "engines": { "node": "22.x" },
+  "dependencies": {
+    "redis": "4.7.0"
+  }
 }
