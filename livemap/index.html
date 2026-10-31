@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DingoZ Live Map</title>
+<meta name="description" content="Live Takistan map for the DingoZ CruZaderZ DayZ server: sign in with Steam to see where you are and plot a route along the roads.">
+<meta name="theme-color" content="#14110e">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Share+Tech+Mono&display=swap">
+<style>
+:root{
+  --ground:#14110e; --panel:#1d1915; --panel-2:#26201a; --line:#3a3027;
+  --sand:#e9dcc6; --dust:#a99a85; --fire:#f0662a; --ember:#ffb347; --blood:#c4352b; --olive:#9bb24a; --sky:#5ab7e8;
+  --display:"Saira Stencil One",Impact,"Arial Narrow",sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --cond:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --mono:"Share Tech Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--ground);color:var(--sand);font-family:var(--body);-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;align-items:center;gap:12px;padding:10px max(14px,env(safe-area-inset-left)) 10px max(14px,env(safe-area-inset-right));background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{margin:0;font-family:var(--display);font-weight:400;font-size:1.35rem;letter-spacing:.02em;line-height:1}
+header h1 span{color:var(--olive)}
+header .grow{flex:1}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--cond);font-weight:700;font-size:.95rem;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;border-radius:6px;padding:9px 13px;border:1px solid var(--line);background:var(--panel-2);color:var(--sand);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--ember)}
+.btn-steam{background:#1b2838;border-color:#3d5a78;color:#dbe7f3}
+.btn-steam:hover{border-color:#66c0f4}
+.btn-fire{background:var(--fire);border-color:var(--fire);color:#1a0d05}
+.btn[aria-pressed="true"]{background:rgba(255,179,71,.16);border-color:var(--ember);color:var(--ember)}
+.status{font-family:var(--cond);font-size:.9rem;letter-spacing:.04em;color:var(--dust);display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;background:#6b6156;display:inline-block}
+.dot.on{background:var(--olive);box-shadow:0 0 8px var(--olive)}
+.dot.warn{background:var(--ember)}
+main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0}
+#map{background:#0f0c0a;min-height:0}
+aside{background:var(--panel);border-left:1px solid var(--line);overflow:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+h2{margin:0 0 8px;font-family:var(--cond);font-weight:700;font-size:.82rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ember)}
+.card{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:12px}
+.me{display:flex;flex-direction:column;gap:4px}
+.me b{font-family:var(--cond);font-size:1.15rem;letter-spacing:.03em}
+.me .grid{font-family:var(--mono);color:var(--dust);font-size:.92rem}
+.help{color:var(--dust);font-size:.92rem;line-height:1.5;margin:0}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+ol.wps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+ol.wps li{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:7px 8px}
+.wpn{font-family:var(--mono);font-size:.82rem;text-align:center;border-radius:4px;padding:1px 0;background:var(--ember);color:var(--ground)}
+.wpn.start{background:var(--sky)}
+.wpl{font-size:.93rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wpl small{display:block;font-family:var(--mono);color:var(--dust);font-size:.78rem}
+.x{background:none;border:0;color:var(--dust);font-size:1.1rem;cursor:pointer;padding:2px 6px}
+.x:hover{color:var(--blood)}
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sum div{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:8px}
+.sum .k{font-family:var(--cond);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dust)}
+.sum .v{font-family:var(--cond);font-weight:700;font-size:1.15rem;font-variant-numeric:tabular-nums}
+ol.dirs{margin:0;padding:0;list-style:none;display:flex;flex-direction:column}
+ol.dirs li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);align-items:start;font-size:.95rem}
+ol.dirs li:last-child{border-bottom:0}
+.ic{font-size:1.05rem;line-height:1.2;text-align:center;color:var(--ember)}
+.dd{font-family:var(--mono);color:var(--dust);font-size:.85rem;white-space:nowrap}
+.empty{color:var(--dust);font-size:.92rem;font-style:italic}
+.toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--ember);color:var(--sand);padding:10px 16px;border-radius:6px;font-family:var(--cond);letter-spacing:.04em;z-index:2000;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:90vw}
+/* map bits */
+.leaflet-container{background:#0f0c0a;font-family:var(--body)}
+.town{font-family:var(--cond);font-weight:600;letter-spacing:.04em;color:#f3e7d2;text-shadow:0 1px 2px #000,0 0 6px #000;white-space:nowrap;font-size:12px;pointer-events:none}
+.town.city{font-size:14px;font-weight:700;text-transform:uppercase}
+.mepin{width:34px;height:34px;position:relative}
+.mepin .ring{position:absolute;inset:6px;border-radius:50%;background:var(--sky);border:3px solid #fff;box-shadow:0 0 0 6px rgba(90,183,232,.25),0 2px 8px rgba(0,0,0,.6)}
+.mepin .arrow{position:absolute;left:50%;top:-6px;width:0;height:0;margin-left:-6px;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:12px solid #fff;transform-origin:6px 23px}
+.wpin{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--ember);border:2px solid #1a0d05;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.6)}
+.wpin span{transform:rotate(45deg);font-family:var(--mono);font-size:12px;color:#1a0d05;font-weight:700}
+.wpin.start{background:var(--sky)}
+.coords{position:absolute;right:10px;bottom:10px;z-index:1000;background:rgba(20,17,14,.85);border:1px solid var(--line);border-radius:6px;padding:5px 9px;font-family:var(--mono);font-size:.82rem;color:var(--dust);pointer-events:none}
+@media (max-width:860px){
+  main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+  aside{border-left:0;border-top:1px solid var(--line);max-height:45vh}
+  header h1{font-size:1.1rem}
+  .coords{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>DingoZ <span>Live Map</span></h1>
+  <div class="status" id="feed"><span class="dot" id="feedDot"></span><span id="feedTxt">Checking server…</span></div>
+  <div class="grow"></div>
+  <span id="auth"></span>
+</header>
+<main>
+  <div id="map" style="position:relative"><div class="coords" id="coords">—</div></div>
+  <aside>
+    <section>
+      <h2>You</h2>
+      <div class="card me" id="meCard"><span class="empty">Sign in with Steam to see where you are.</span></div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" id="followBtn" aria-pressed="false" type="button">Follow me</button>
+        <button class="btn" id="centerBtn" type="button">Find me</button>
+      </div>
+    </section>
+    <section>
+      <h2>Route</h2>
+      <p class="help">Tap the map to drop a waypoint. Your live position is the start when you're in game; otherwise your first tap is the start. Drag pins to move them.</p>
+      <ol class="wps" id="wps" style="margin-top:10px"></ol>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="clearBtn" type="button">Clear route</button>
+        <button class="btn" id="roadsBtn" aria-pressed="false" type="button">Show roads</button>
+      </div>
+    </section>
+    <section id="sumSec" hidden>
+      <div class="sum">
+        <div><div class="k">Distance</div><div class="v" id="sDist">–</div></div>
+        <div><div class="k">On road</div><div class="v" id="sRoad">–</div></div>
+        <div><div class="k">Drive</div><div class="v" id="sTime">–</div></div>
+      </div>
+    </section>
+    <section>
+      <h2>Directions</h2>
+      <ol class="dirs" id="dirs"><li class="empty" style="display:block;border:0">Add a destination to get directions.</li></ol>
+    </section>
+    <p class="help" style="font-size:.82rem">Only you can see your own position. Roads are traced from the map; dashed lines are off-road stretches.</p>
+  </aside>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(async function(){
+const SIZE=12800;
+const $=id=>document.getElementById(id);
+const toast=(m,ms=3200)=>{const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),ms);};
+const ll=(x,z)=>L.latLng(z,x);
+const grid=(x,z)=>String(Math.floor(x/100)).padStart(3,'0')+' '+String(Math.floor(z/100)).padStart(3,'0');
+const fmtD=m=>m>=1000?(m/1000).toFixed(m>=10000?0:1)+' km':Math.round(m/10)*10+' m';
+const fmtT=s=>s<60?'<1 min':Math.round(s/60)+' min';
+
+// ---------- map ----------
+const map=L.map('map',{crs:L.CRS.Simple,minZoom:-4,maxZoom:1.5,zoomSnap:.25,zoomDelta:.5,attributionControl:false,maxBounds:[[-1500,-1500],[SIZE+1500,SIZE+1500]]});
+L.imageOverlay('takistan-map.jpg',[[0,0],[SIZE,SIZE]]).addTo(map);
+map.fitBounds([[0,0],[SIZE,SIZE]]);
+map.on('mousemove',e=>{$('coords').textContent='X '+Math.round(e.latlng.lng)+'  Z '+Math.round(e.latlng.lat)+'  ·  grid '+grid(e.latlng.lng,e.latlng.lat);});
+
+const [roads,towns]=await Promise.all([fetch('roads.json').then(r=>r.json()),fetch('towns.json').then(r=>r.json())]);
+
+const townLayer=L.layerGroup().addTo(map);
+for(const [n,x,z,kind] of towns){ L.marker(ll(x,z),{interactive:false,icon:L.divIcon({className:'town '+kind,html:n,iconSize:null,iconAnchor:[0,8]})}).addTo(townLayer); }
+const nearestTown=(x,z,max)=>{let b=null,bd=max;for(const t of towns){const d=Math.hypot(t[1]-x,t[2]-z);if(d<bd){bd=d;b=t;}}return b;};
+const placeName=(x,z)=>{const t=nearestTown(x,z,900);return t?('near '+t[0]):('grid '+grid(x,z));};
+
+// road overlay (optional)
+const roadLayer=L.layerGroup();
+for(const e of roads.edges) L.polyline(e.pts.map(p=>ll(p[0],p[1])),{color:e.major?'#ffb347':'#e9dcc6',weight:e.major?3:2,opacity:.75,interactive:false}).addTo(roadLayer);
+$('roadsBtn').onclick=()=>{const on=$('roadsBtn').getAttribute('aria-pressed')!=='true';$('roadsBtn').setAttribute('aria-pressed',on);on?roadLayer.addTo(map):roadLayer.remove();};
+
+// ---------- road graph ----------
+const N=roads.nodes.length; const adj=Array.from({length:N},()=>[]);
+roads.edges.forEach((e,i)=>{const w=e.len*(e.major?0.9:1);adj[e.a].push({to:e.b,w,ei:i,fwd:true});adj[e.b].push({to:e.a,w,ei:i,fwd:false});});
+const segLen=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1]);
+// snap a point to the nearest spot on any road
+function snap(x,z){
+  let best=null;
+  roads.edges.forEach((e,ei)=>{let acc=0;for(let i=0;i<e.pts.length-1;i++){const a=e.pts[i],b=e.pts[i+1];const dx=b[0]-a[0],dz=b[1]-a[1];const L2=dx*dx+dz*dz;let t=L2?((x-a[0])*dx+(z-a[1])*dz)/L2:0;t=Math.max(0,Math.min(1,t));const px=a[0]+t*dx,pz=a[1]+t*dz;const d=Math.hypot(x-px,z-pz);const sl=Math.sqrt(L2);if(!best||d<best.d)best={d,ei,i,t,p:[px,pz],along:acc+t*sl};acc+=sl;}});
+  const e=roads.edges[best.ei]; best.total=e.pts.reduce((s,p,i)=>i?s+segLen(e.pts[i-1],p):0,0); return best;
+}
+function slice(e,fromAlong,toAlong){ // polyline between two distances along edge (either direction)
+  const rev=fromAlong>toAlong; let a=Math.min(fromAlong,toAlong), b=Math.max(fromAlong,toAlong);
+  const out=[]; let acc=0;
+  for(let i=0;i<e.pts.length-1;i++){const p=e.pts[i],q=e.pts[i+1];const sl=segLen(p,q);const s0=acc,s1=acc+sl;
+    const lerp=s=>[p[0]+(q[0]-p[0])*((s-s0)/(sl||1)),p[1]+(q[1]-p[1])*((s-s0)/(sl||1))];
+    if(s1>=a&&s0<=b){ if(!out.length) out.push(lerp(Math.max(a,s0))); if(s1<=b) out.push(q); else {out.push(lerp(b));break;} }
+    acc=s1;}
+  return rev?out.reverse():out;
+}
+const OFF=2.2; // off-road cost multiplier (slower, rougher)
+function route(A,B){ // A,B: [x,z]
+  const sa=snap(A[0],A[1]), sb=snap(B[0],B[1]);
+  const direct=segLen(A,B);
+  // virtual nodes: N = start, N+1 = end
+  const extra={}; const add=(u,v)=>{(extra[u]=extra[u]||[]).push(v);};
+  const ea=roads.edges[sa.ei], eb=roads.edges[sb.ei];
+  add(N,{to:ea.a,w:sa.d*OFF+sa.along,kind:'s',e:ea,from:sa.along,toA:0});
+  add(N,{to:ea.b,w:sa.d*OFF+(sa.total-sa.along),kind:'s',e:ea,from:sa.along,toA:sa.total});
+  add(eb.a,{to:N+1,w:sb.d*OFF+sb.along,kind:'e',e:eb,from:0,toA:sb.along});
+  add(eb.b,{to:N+1,w:sb.d*OFF+(sb.total-sb.along),kind:'e',e:eb,from:sb.total,toA:sb.along});
+  if(sa.ei===sb.ei) add(N,{to:N+1,w:sa.d*OFF+Math.abs(sa.along-sb.along)+sb.d*OFF,kind:'same',e:ea,from:sa.along,toA:sb.along});
+  add(N,{to:N+1,w:direct*OFF,kind:'direct'});
+  const dist=new Float64Array(N+2).fill(Infinity), prev=new Array(N+2); dist[N]=0;
+  const pq=[[0,N]];
+  while(pq.length){ // small graph: simple binary heap
+    let bi=0;for(let i=1;i<pq.length;i++) if(pq[i][0]<pq[bi][0]) bi=i;
+    const [d,u]=pq.splice(bi,1)[0]; if(d>dist[u]) continue; if(u===N+1) break;
+    const list=(u<N?adj[u]:[]).concat(extra[u]||[]);
+    for(const v of list){const nd=d+v.w;if(nd<dist[v.to]){dist[v.to]=nd;prev[v.to]={u,v};pq.push([nd,v.to]);}}
+  }
+  // rebuild
+  const steps=[]; let cur=N+1; while(cur!==N){const p=prev[cur]; if(!p) return null; steps.push(p); cur=p.u;} steps.reverse();
+  const legs=[]; // {type:'road'|'off', pts:[[x,z]...], node?:index}
+  for(const {u,v} of steps){
+    if(v.kind==='direct'){legs.push({type:'off',pts:[A,B]});continue;}
+    if(v.kind==='s'){legs.push({type:'off',pts:[A,sa.p]});legs.push({type:'road',pts:slice(v.e,v.from,v.toA),node:v.to});continue;}
+    if(v.kind==='same'){legs.push({type:'off',pts:[A,sa.p]});legs.push({type:'road',pts:slice(v.e,v.from,v.toA)});legs.push({type:'off',pts:[sb.p,B]});continue;}
+    if(v.kind==='e'){legs.push({type:'road',pts:slice(v.e,v.from,v.toA),node:u});legs.push({type:'off',pts:[sb.p,B]});continue;}
+    const e=roads.edges[v.ei]; legs.push({type:'road',pts:v.fwd?e.pts:[...e.pts].reverse(),node:v.to,fromNode:u});
+  }
+  return legs.filter(l=>l.pts.length>1&&!(l.type==='off'&&segLen(l.pts[0],l.pts[l.pts.length-1])<15));
+}
+const bearing=(a,b)=>(Math.atan2(b[0]-a[0],b[1]-a[1])*180/Math.PI+360)%360;
+const compass=b=>['north','north-east','east','south-east','south','south-west','west','north-west'][Math.round(b/45)%8];
+const degree=i=>adj[i]?adj[i].length:0;
+function headingAt(pts,fromEnd,distWant=60){ // direction over the last/first ~60m of a polyline
+  if(fromEnd){let acc=0;for(let i=pts.length-1;i>0;i--){acc+=segLen(pts[i-1],pts[i]);if(acc>=distWant||i===1)return bearing(pts[i-1],pts[pts.length-1]);}}
+  else{let acc=0;for(let i=1;i<pts.length;i++){acc+=segLen(pts[i-1],pts[i]);if(acc>=distWant||i===pts.length-1)return bearing(pts[0],pts[i]);}}
+  return 0;
+}
+function directions(legs,dest){
+  const out=[]; let run=0, runRoad=true, lastLabel=null;
+  const lenOf=l=>l.pts.reduce((s,p,i)=>i?s+segLen(l.pts[i-1],p):0,0);
+  legs.forEach((l,i)=>{
+    const L_=lenOf(l);
+    if(l.type==='off'){
+      if(run>0){out.push({ic:'↑',t:'Follow the road',d:run});run=0;}
+      const b=bearing(l.pts[0],l.pts[l.pts.length-1]);
+      const toRoad=legs[i+1]&&legs[i+1].type==='road';
+      out.push({ic:'⇢',t:(i===0?'Head ':'Go ')+compass(b)+' off-road'+(toRoad?' to the road':' to your waypoint'),d:L_});
+      return;
+    }
+    run+=L_;
+    const next=legs[i+1];
+    if(next&&next.type==='road'&&l.node!=null&&degree(l.node)>=3){
+      const hin=headingAt(l.pts,true), hout=headingAt(next.pts,false);
+      let a=((hout-hin+540)%360)-180; // -180..180, positive = right
+      const n=roads.nodes[l.node]; const where=placeName(n[0],n[1]);
+      let t=null, ic='↑';
+      if(Math.abs(a)<25) t=null;
+      else if(Math.abs(a)<55){t=(a>0?'Bear right':'Bear left');ic=a>0?'↗':'↖';}
+      else if(Math.abs(a)<135){t=(a>0?'Turn right':'Turn left');ic=a>0?'→':'←';}
+      else {t=(a>0?'Sharp right':'Sharp left');ic=a>0?'↪':'↩';}
+      if(t){out.push({ic:'↑',t:'Continue',d:run,hide:true});run=0;out.push({ic,t:t+' '+where,d:0,turn:true});}
+    }
+  });
+  if(run>0) out.push({ic:'↑',t:'Follow the road',d:run});
+  out.push({ic:'⚑',t:'Arrive '+placeName(dest[0],dest[1]),d:0});
+  // fold "continue" distances into the following turn line
+  const res=[]; let carry=0;
+  for(const s of out){ if(s.hide){carry+=s.d;continue;} if(s.turn){res.push({...s,d:carry});carry=0;} else {res.push({...s,d:s.d+carry});carry=0;} }
+  return res;
+}
+
+// ---------- waypoints & route drawing ----------
+let me=null; // {x,z,d}
+const wps=[]; // {x,z,marker}
+const routeLayer=L.layerGroup().addTo(map);
+const pinIcon=(label,start)=>L.divIcon({className:'',html:`<div class="wpin${start?' start':''}"><span>${label}</span></div>`,iconSize:[26,26],iconAnchor:[13,26]});
+function startPoint(){ return me?[me.x,me.z]:(wps[0]?[wps[0].x,wps[0].z]:null); }
+function renderList(){
+  const ol=$('wps'); ol.innerHTML='';
+  if(me){const li=document.createElement('li');li.innerHTML=`<span class="wpn start">ME</span><span class="wpl">Your position<small>grid ${grid(me.x,me.z)}</small></span><span></span>`;ol.appendChild(li);}
+  wps.forEach((w,i)=>{const isStart=!me&&i===0;const li=document.createElement('li');
+    li.innerHTML=`<span class="wpn${isStart?' start':''}">${isStart?'S':(me?i+1:i)}</span><span class="wpl">${placeName(w.x,w.z).replace(/^near /,'')}<small>grid ${grid(w.x,w.z)}</small></span><button class="x" type="button" aria-label="Remove waypoint">✕</button>`;
+    li.querySelector('.x').onclick=()=>{map.removeLayer(w.marker);wps.splice(i,1);relabel();update();};ol.appendChild(li);});
+  if(!me&&!wps.length) ol.innerHTML='<li class="empty" style="display:block;background:none;border:0;padding:0">No waypoints yet.</li>';
+}
+function relabel(){ wps.forEach((w,i)=>{const isStart=!me&&i===0;w.marker.setIcon(pinIcon(isStart?'S':(me?i+1:i),isStart));}); }
+function update(){
+  renderList(); routeLayer.clearLayers();
+  const pts=[]; const s=startPoint(); if(!s) return clearDirs();
+  pts.push(s); (me?wps:wps.slice(1)).forEach(w=>pts.push([w.x,w.z]));
+  if(pts.length<2) return clearDirs();
+  let total=0, road=0, allDirs=[];
+  for(let k=0;k<pts.length-1;k++){
+    const legs=route(pts[k],pts[k+1]); if(!legs) continue;
+    for(const l of legs){
+      const len=l.pts.reduce((s2,p,i)=>i?s2+segLen(l.pts[i-1],p):0,0); total+=len; if(l.type==='road') road+=len;
+      const latlngs=l.pts.map(p=>ll(p[0],p[1]));
+      if(l.type==='road'){L.polyline(latlngs,{color:'#1a0d05',weight:9,opacity:.65,interactive:false}).addTo(routeLayer);L.polyline(latlngs,{color:'#ffb347',weight:5,opacity:1,interactive:false}).addTo(routeLayer);}
+      else L.polyline(latlngs,{color:'#ffb347',weight:4,dashArray:'6 9',opacity:.95,interactive:false}).addTo(routeLayer);
+    }
+    const d=directions(legs,pts[k+1]); if(k<pts.length-2) d[d.length-1].t=d[d.length-1].t.replace('Arrive','Reach waypoint'); allDirs=allDirs.concat(d);
+  }
+  $('sumSec').hidden=false; $('sDist').textContent=fmtD(total); $('sRoad').textContent=total?Math.round(road/total*100)+'%':'–';
+  $('sTime').textContent=fmtT(road/(60/3.6)+(total-road)/(20/3.6)); // ~60 km/h on road, ~20 off-road
+  const ol=$('dirs'); ol.innerHTML='';
+  for(const s of allDirs){const li=document.createElement('li');li.innerHTML=`<span class="ic">${s.ic}</span><span>${s.t}</span><span class="dd">${s.d?fmtD(s.d):''}</span>`;ol.appendChild(li);}
+}
+function clearDirs(){ $('sumSec').hidden=true; $('dirs').innerHTML='<li class="empty" style="display:block;border:0">Add a destination to get directions.</li>'; }
+function addWp(x,z){
+  if(wps.length>=8){toast('Up to 8 waypoints');return;}
+  const w={x,z}; const idx=wps.length;
+  w.marker=L.marker(ll(x,z),{draggable:true,icon:pinIcon('?',false)}).addTo(map);
+  w.marker.on('dragend',ev=>{const p=ev.target.getLatLng();w.x=p.lng;w.z=p.lat;update();});
+  wps.push(w); relabel(); update();
+}
+map.on('click',e=>{const x=e.latlng.lng,z=e.latlng.lat; if(x<0||z<0||x>SIZE||z>SIZE) return; addWp(x,z);});
+$('clearBtn').onclick=()=>{wps.forEach(w=>map.removeLayer(w.marker));wps.length=0;update();};
+
+// ---------- live position ----------
+let meMarker=null, follow=false, signedIn=false, firstFix=true;
+const meIcon=d=>L.divIcon({className:'',html:`<div class="mepin"><div class="arrow" style="transform:rotate(${d||0}deg)"></div><div class="ring"></div></div>`,iconSize:[34,34],iconAnchor:[17,17]});
+$('followBtn').onclick=()=>{follow=!follow;$('followBtn').setAttribute('aria-pressed',follow);if(follow&&me)map.panTo(ll(me.x,me.z));};
+$('centerBtn').onclick=()=>{ if(me) map.setView(ll(me.x,me.z),Math.max(map.getZoom(),-1)); else toast(signedIn?'You are not in game right now':'Sign in with Steam first'); };
+function renderAuth(info){
+  const a=$('auth');
+  if(info.signedIn){a.innerHTML=`<a class="btn" href="/api/auth/logout">Sign out</a>`;}
+  else a.innerHTML=`<a class="btn btn-steam" href="/api/auth/steam"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="16" cy="8" r="3.2"/><circle cx="8" cy="16" r="2.4"/><path d="M8 16l6-6" stroke="currentColor" stroke-width="2.2"/></svg>Sign in through Steam</a>`;
+}
+async function poll(){
+  let info={signedIn:false};
+  try{info=await fetch('/api/me',{cache:'no-store'}).then(r=>r.json());}catch{}
+  signedIn=info.signedIn; renderAuth(info);
+  const card=$('meCard');
+  if(!info.signedIn){card.innerHTML='<span class="empty">Sign in with Steam to see where you are.</span>';setMe(null);return;}
+  if(info.online&&info.pos){
+    setMe(info.pos);
+    const age=Math.max(0,Math.round((Date.now()-info.pos.t)/1000));
+    card.innerHTML=`<b>${placeName(info.pos.x,info.pos.z).replace(/^near /,'Near ')}</b><span class="grid">grid ${grid(info.pos.x,info.pos.z)} · heading ${compass(info.pos.d||0)}</span><span class="grid">updated ${age}s ago</span>`;
+  } else {
+    setMe(null);
+    card.innerHTML=`<b>Not in game</b><span class="help">${info.serverLive?'Join the server and your position shows up within about 15 seconds.':'The server is not sending positions right now.'}</span>`;
+  }
+}
+function setMe(p){
+  const had=!!me; me=p?{x:p.x,z:p.z,d:p.d}:null;
+  if(me){ if(!meMarker) meMarker=L.marker(ll(me.x,me.z),{icon:meIcon(me.d),interactive:false,zIndexOffset:1000}).addTo(map); else {meMarker.setLatLng(ll(me.x,me.z));meMarker.setIcon(meIcon(me.d));}
+    if(firstFix){map.setView(ll(me.x,me.z),-1);firstFix=false;} else if(follow) map.panTo(ll(me.x,me.z)); }
+  else if(meMarker){map.removeLayer(meMarker);meMarker=null;}
+  if(had!==!!me) relabel();
+  update();
+}
+async function health(){
+  try{const h=await fetch('/api/health',{cache:'no-store'}).then(r=>r.json());
+    const live=h.lastUpdateSecondsAgo!=null&&h.lastUpdateSecondsAgo<90;
+    $('feedDot').className='dot '+(live?'on':'warn');
+    $('feedTxt').textContent=live?`Server live · ${h.playersReported} online`:'Server feed offline';
+  }catch{$('feedDot').className='dot';$('feedTxt').textContent='Status unavailable';}
+}
+const qs=new URLSearchParams(location.search);
+if(qs.get('login')==='ok'){toast('Signed in through Steam');history.replaceState(null,'','/');}
+if(qs.get('login')==='failed'){toast('Steam sign-in did not complete');history.replaceState(null,'','/');}
+update(); poll(); health();
+setInterval(()=>{ if(!document.hidden) poll(); },7000);
+setInterval(()=>{ if(!document.hidden) health(); },30000);
+window.__dz={route,snap,roads}; // for testing
+})();
+</script>
+</body>
+</html>
