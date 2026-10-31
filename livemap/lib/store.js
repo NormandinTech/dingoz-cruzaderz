@@ -1,7 +1,12 @@
 // Position store. Uses Upstash Redis (REST) when its env vars are present,
 // otherwise falls back to in-memory (fine for testing, not reliable in production).
-const URL_ = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "";
-const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "";
+// Upstash on the Vercel Marketplace may use a custom prefix (e.g. STORAGE_KV_REST_API_URL),
+// so accept any *_REST_API_URL / *_REDIS_REST_URL pair.
+const envKeys = Object.keys(process.env);
+const pick = (re) => { const k = envKeys.find((n) => re.test(n) && process.env[n]); return k ? process.env[k] : ""; };
+const URL_ = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || pick(/(_|^)(KV_REST_API_URL|REDIS_REST_URL)$/) || "";
+const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || pick(/(_|^)(KV_REST_API_TOKEN|REDIS_REST_TOKEN)$/) || "";
+export const storeEnvNames = envKeys.filter((n) => /KV|REDIS|UPSTASH|STORAGE/i.test(n)).sort();
 const KEY = "dingoz:positions";
 const TTL = 120; // seconds; positions vanish if the server stops sending
 

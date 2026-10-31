@@ -1,4 +1,4 @@
-import { loadPositions, storeKind } from "../lib/store.js";
+import { loadPositions, storeKind, storeEnvNames } from "../lib/store.js";
 
 // Public status: is the game server sending? (counts only, no IDs or positions)
 export default async function handler(req, res) {
@@ -9,5 +9,6 @@ export default async function handler(req, res) {
     lastUpdateSecondsAgo: data ? Math.round((Date.now() - data.t) / 1000) : null,
     playersReported: data ? Object.keys(data.p || {}).length : 0,
     configured: !!process.env.INGEST_KEY && !!process.env.SESSION_SECRET,
+    storeSettingNames: storeEnvNames, // names only, never values
   });
 }
