@@ -164,8 +164,8 @@ const townLayer=L.layerGroup().addTo(map);
 for(const [n,x,z,kind] of towns){ L.marker(ll(x,z),{interactive:false,icon:L.divIcon({className:'town '+kind,html:n,iconSize:null,iconAnchor:[0,8]})}).addTo(townLayer); }
 const nearestTown=(x,z,max)=>{let b=null,bd=max;for(const t of towns){const d=Math.hypot(t[1]-x,t[2]-z);if(d<bd){bd=d;b=t;}}return b;};
 const POIS=[
-  ['Main trader hub',6605,6995,'trader'],['Drug trader',6612,4573,'trader'],['Hunting trader',6325,4782,'trader'],
-  ['Black Market',3908,9351,'bm'],['Collectables & High-end',1828,7596,'trader'],
+  ['Dingos Dive (main trader)',6605,6995,'trader'],['Drug Hideout',6612,4573,'trader'],['Hunting Post',6325,4782,'trader'],
+  ['Black Market',3908,9351,'bm'],['Collectables & Highend Trader',1828,7596,'trader'],
   ['North Airfield bunker',5840,11302,'bunker'],['Underground Dam bunker',1373,8775,'bunker'],['East underground lab',10325,8215,'bunker'],
   ['Rasman airbase',5650,11190,'air'],['Southern airstrip',7940,1900,'air']];
 const nearestPoi=(x,z,max)=>{let b=null,bd=max;for(const p of POIS){const d=Math.hypot(p[1]-x,p[2]-z);if(d<bd){bd=d;b=p;}}return b;};
