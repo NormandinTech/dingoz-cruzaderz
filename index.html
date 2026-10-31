@@ -100,6 +100,9 @@ section.band{padding-block:clamp(48px,7vw,84px)}
 .imaplink:hover{background:rgba(255,179,71,.2)}
 .livelink{background:var(--fire);color:#1a0d05;border-color:var(--fire)}
 .livelink:hover{background:var(--ember)}
+.livenote{margin:8px 0 0;text-align:center;font-size:.9rem;opacity:.8}
+.btn-map{background:transparent;color:var(--ember);border:1px solid rgba(255,179,71,.55)}
+.btn-map:hover{background:rgba(255,179,71,.14)}
 .legend{display:flex;flex-direction:column;gap:0;min-width:0}
 .loc{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--line)}
 .loc:first-child{border-top:1px solid var(--line)}
@@ -171,6 +174,7 @@ footer .brand{font-family:var(--display);color:var(--sand);font-size:1.1rem;lett
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><circle cx="9.5" cy="10.5" r=".9" fill="currentColor"/><circle cx="14.5" cy="10.5" r=".9" fill="currentColor"/></svg>
           Join the Discord
         </a>
+        <a class="btn btn-map" href="https://dingoz-cruzaderz-livemap.vercel.app/" target="_blank" rel="noopener">📍 Live map</a>
         <div class="ip" role="group" aria-label="Server address">
           <code id="ipText">5.226.142.84:2302</code>
           <button type="button" id="copyIp">Copy IP</button>
@@ -288,8 +292,8 @@ footer .brand{font-family:var(--display);color:var(--sand);font-size:1.1rem;lett
           <div id="view-tiers" role="tabpanel" aria-labelledby="tab-tiers" hidden>
             <img class="tiermap" src="tier-map.jpg" alt="Takistan Sequel loot tier map: Tier 1 and the spawn zone in the south, Tier 2 across the middle, Tier 3 in the north, with the bunker run marked in the north-west" width="1280" height="1280" loading="lazy">
           </div>
-          <a class="imaplink livelink" href="https://dingoz-cruzaderz-livemap.vercel.app/" target="_blank" rel="noopener">📍 Live map: see where you are &amp; plot a route ↗</a>
-          <a class="imaplink" href="https://marthieson.github.io/DayZ-tsiamap/" target="_blank" rel="noopener">Open the interactive Takistan Sequel map ↗</a>
+          <a class="imaplink livelink" href="https://dingoz-cruzaderz-livemap.vercel.app/" target="_blank" rel="noopener">📍 Open the DingoZ live map: your position, routes &amp; turn directions ↗</a>
+          <p class="livenote">Sign in with Steam to see your own dot in real time. Only you can see your position.</p>
         </div>
         <div class="legend">
           <div class="lgroup">Trader posts &amp; airfields</div>
