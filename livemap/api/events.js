@@ -11,6 +11,9 @@ const KEY = "dingoz:events";
 const TTL = 240;
 const SEARCH_R = 900;   // radius of the search circle (m)
 const MAX_OFF = 600;    // the real spot is somewhere inside, up to this far from the circle centre
+// The three always-toxic bunker zones are drawn by the page; drop scan hits that are just those.
+const BUNKERS = [[1320, 8750, 200], [5830, 11310, 150], [10325, 8215, 100]];
+const nearBunker = ([x, z]) => BUNKERS.some(([bx, bz, r]) => Math.hypot(x - bx, z - bz) < r + 150);
 
 function keyOk(req) {
   const key = String(req.query.key || "");
@@ -55,7 +58,7 @@ export default async function handler(req, res) {
     signedIn: true,
     live: Date.now() - e.t < 180_000,
     age: Math.round((Date.now() - e.t) / 1000),
-    gas: e.gas.map(([x, z]) => ({ x, z, r: 120 })),
+    gas: e.gas.filter((p) => !nearBunker(p)).map(([x, z]) => ({ x, z, r: 120 })),
     heli: e.heli.map((p) => fuzz(p, "heli")),
     convoy: e.convoy.map((p) => fuzz(p, "convoy")),
     sandstorm,
