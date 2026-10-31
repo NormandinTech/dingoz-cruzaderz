@@ -153,7 +153,7 @@ const fmtT=s=>s<60?'<1 min':Math.round(s/60)+' min';
 
 // ---------- map ----------
 const map=L.map('map',{crs:L.CRS.Simple,minZoom:-4,maxZoom:1.5,zoomSnap:.25,zoomDelta:.5,attributionControl:false,maxBounds:[[-1500,-1500],[SIZE+1500,SIZE+1500]]});
-const MAPB=[[287.5,937.5],[12487.5,12650]]; // the area the in-game map actually draws
+const MAPB=[[0,0],[SIZE,SIZE]]; // Takistan Sequel in-game map, full 12.8 km square
 L.imageOverlay('takistan-map.jpg',MAPB).addTo(map);
 map.fitBounds(MAPB);
 map.on('mousemove',e=>{$('coords').textContent='X '+Math.round(e.latlng.lng)+'  Z '+Math.round(e.latlng.lat)+'  ·  grid '+grid(e.latlng.lng,e.latlng.lat);});
