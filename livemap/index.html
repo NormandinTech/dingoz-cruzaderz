@@ -70,6 +70,7 @@ ol.dirs li:last-child{border-bottom:0}
 .evlist li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:.92rem}
 .evlist .sw{width:14px;height:14px;border-radius:50%;border:2px solid currentColor}
 .evlist .n{font-family:var(--cond);font-weight:700;color:var(--ember)}
+.breach{animation:breachPulse 1.6s ease-in-out infinite}@keyframes breachPulse{50%{stroke-opacity:.35;fill-opacity:.06}}@media (prefers-reduced-motion:reduce){.breach{animation:none}}
 .storm{margin-top:8px;padding:8px 10px;border-radius:6px;background:rgba(214,170,90,.18);border:1px solid #d6aa5a;color:#f0d39b;font-family:var(--cond);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
 .evtag{font-family:var(--cond);font-weight:700;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,.55);color:#fff;white-space:nowrap}
 .toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--ember);color:var(--sand);padding:10px 16px;border-radius:6px;font-family:var(--cond);letter-spacing:.04em;z-index:2000;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:90vw}
@@ -193,8 +194,17 @@ function drawEvents(){
   for(const [n,x,z,r] of BUNKER_GAS) ring(x,z,r,{color:'#7fc241',weight:2,fillColor:'#7fc241',fillOpacity:.22,dashArray:'4 4'}).bindTooltip(n+' (always gassed: bring a mask, filters and a suit)').addTo(evLayer);
   if(!evData||!evData.live) return;
   for(const g of evData.gas) ring(g.x,g.z,g.r,{color:'#b8e04a',weight:2,fillColor:'#b8e04a',fillOpacity:.35}).bindTooltip('Gas strike: active now').addTo(evLayer);
-  for(const h of evData.heli) ring(h.x,h.z,h.r,{color:'#ff6b3d',weight:2,fillColor:'#ff6b3d',fillOpacity:.10,dashArray:'8 6'}).bindTooltip('Heli crash somewhere in here (look for smoke). Heavy military infected.').addTo(evLayer);
+  for(const h of evData.heli) ring(h.x,h.z,h.r,{color:'#ff6b3d',weight:2,fillColor:'#ff6b3d',fillOpacity:.10,dashArray:'8 6'}).bindTooltip('Heli crash somewhere in here. Heavy military infected.').addTo(evLayer);
   for(const c of evData.convoy) ring(c.x,c.z,c.r,{color:'#ffb347',weight:2,fillColor:'#ffb347',fillOpacity:.08,dashArray:'2 6'}).bindTooltip('Military convoy somewhere on the roads in here. Heavy military infected.').addTo(evLayer);
+  for(const b of (evData.breach||[])){const col=BREACH_COL[b.tier]||'#e5484d';ring(b.x,b.z,b.r,{color:col,weight:3,fillColor:col,fillOpacity:.18,className:'breach'}).bindTooltip(`${b.tier} vault breached ${mins(b.age)} somewhere in here. Guards and wolves are loose.`).addTo(evLayer);}
+}
+const BREACH_COL={Yellow:'#f5d90a',Green:'#46a758',Blue:'#3e8ef7',Purple:'#9d5bd2',Red:'#e5484d'};
+const mins=s=>s<90?'just now':Math.round(s/60)+' min ago';
+let seenBreach=null;
+function breachToasts(){
+  const list=(evData&&evData.live&&evData.breach)||[];const keys=list.map(b=>b.tier+b.x+':'+b.z);
+  if(seenBreach){for(let i=0;i<list.length;i++){if(!seenBreach.has(keys[i]))toast(`⚠ ${list[i].tier} vault breached!`);}}
+  seenBreach=new Set(keys);
 }
 function renderEvCard(){
   const c=$('evCard');
@@ -202,13 +212,13 @@ function renderEvCard(){
   const d=evData, live=d&&d.live;
   const row=(col,label,n)=>`<li><span class="sw" style="color:${col}"></span><span>${label}</span><span class="n">${n}</span></li>`;
   c.innerHTML=(live&&d.sandstorm?'<div class="storm">⚠ Sandstorm in progress</div>':'')+
-    `<ul class="evlist">${row('#ff6b3d','Heli crash search areas',live?d.heli.length:'–')}${row('#ffb347','Convoy search areas',live?d.convoy.length:'–')}${row('#b8e04a','Gas strikes',live?d.gas.length:'–')}${row('#7fc241','Toxic zones (always)',5)}</ul>`+
-    `<p class="help" style="margin:8px 0 0">${live?'Updated '+d.age+'s ago. Crashes and convoys show a rough area only: find the smoke.':'Waiting for the server to report events.'}</p>`;
+    `<ul class="evlist">${row('#ff6b3d','Heli crash search areas',live?d.heli.length:'–')}${row('#ffb347','Convoy search areas',live?d.convoy.length:'–')}${row('#b8e04a','Gas strikes',live?d.gas.length:'–')}${row('#e5484d','Vaults breached (30 min)',live?(d.breach||[]).length:'–')}${row('#7fc241','Toxic zones (always)',5)}</ul>`+
+    `<p class="help" style="margin:8px 0 0">${live?'Updated '+d.age+'s ago. Crashes, convoys and breached vaults show a rough area only.':'Waiting for the server to report events.'}</p>`;
 }
 async function pollEvents(){
   if(!signedIn){evData=null;drawEvents();renderEvCard();return;}
   try{evData=await fetch('/api/events',{cache:'no-store'}).then(r=>r.json());}catch{evData=null;}
-  drawEvents(); renderEvCard();
+  drawEvents(); renderEvCard(); breachToasts();
 }
 $('evBtn').onclick=()=>{evOn=!evOn;$('evBtn').setAttribute('aria-pressed',evOn);evOn?evLayer.addTo(map):evLayer.remove();};
 drawEvents();

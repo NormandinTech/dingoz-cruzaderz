@@ -3,7 +3,7 @@ import { readSession } from "../lib/session.js";
 import { saveJSON, loadJSON } from "../lib/store.js";
 
 // POST /api/events?key=INGEST_KEY  (from the DayZ server every ~60s)
-//   {"heli":[[x,z]...],"convoy":[[x,z]...],"gas":[[x,z]...],"fog":0.1,"ovc":0.2,"wind":5,"dbg":"..."}
+//   {"heli":[[x,z]...],"convoy":[[x,z]...],"gas":[[x,z]...],"breach":[[x,z,tier,ageSec]...],"fog":0.1,"ovc":0.2,"wind":5,"dbg":"..."}
 // GET  /api/events  (signed-in players only)
 //   Gas strikes are exact. Heli crashes and convoys are returned only as a rough
 //   search circle, so players still have to hunt for them. Exact spots never leave the server.
@@ -13,6 +13,11 @@ const SEARCH_R = 900;   // radius of the search circle (m)
 const MAX_OFF = 600;    // the real spot is somewhere inside, up to this far from the circle centre
 // The three always-toxic bunker zones are drawn by the page; drop scan hits that are just those.
 const BUNKERS = [[1320, 8750, 120], [5830, 11310, 90], [10325, 8215, 60], [6004, 11790, 72], [11600, 10835, 78]];
+const TIERS = ["Yellow", "Green", "Blue", "Purple", "Red"];
+const BREACH_TTL = 1800; // show a vault breach for 30 minutes
+const breaches = (a) => (Array.isArray(a) ? a : []).slice(0, 20)
+  .map((p) => [Number(p?.[0]), Number(p?.[1]), Math.round(Number(p?.[2])), Number(p?.[3]) || 0])
+  .filter(([x, z, t]) => isFinite(x) && isFinite(z) && t >= 0 && t <= 4 && x > -500 && x < 13500 && z > -500 && z < 13500);
 const nearBunker = ([x, z]) => BUNKERS.some(([bx, bz, r]) => Math.hypot(x - bx, z - bz) < r + 150);
 
 function keyOk(req) {
@@ -24,12 +29,12 @@ const pts = (a) => (Array.isArray(a) ? a : []).slice(0, 100)
   .map((p) => [Number(p?.[0]), Number(p?.[1])])
   .filter(([x, z]) => isFinite(x) && isFinite(z) && x > -500 && x < 13500 && z > -500 && z < 13500);
 
-function fuzz([x, z], salt) {
+function fuzz([x, z], salt, radius = SEARCH_R, maxOff = MAX_OFF) {
   // stable for a given spot (the circle doesn't jump around), but not reversible without the secret
   const h = crypto.createHmac("sha256", (process.env.SESSION_SECRET || "dz") + salt).update(`${Math.round(x)}:${Math.round(z)}`).digest();
   const ang = (h.readUInt16BE(0) / 65535) * Math.PI * 2;
-  const dist = Math.sqrt(h.readUInt16BE(2) / 65535) * MAX_OFF;
-  return { x: Math.round(x + Math.cos(ang) * dist), z: Math.round(z + Math.sin(ang) * dist), r: SEARCH_R };
+  const dist = Math.sqrt(h.readUInt16BE(2) / 65535) * maxOff;
+  return { x: Math.round(x + Math.cos(ang) * dist), z: Math.round(z + Math.sin(ang) * dist), r: radius };
 }
 
 export default async function handler(req, res) {
@@ -40,7 +45,7 @@ export default async function handler(req, res) {
     if (typeof b === "string") { try { b = JSON.parse(b); } catch { return res.status(400).json({ error: "bad json" }); } }
     const out = {
       t: Date.now(),
-      heli: pts(b?.heli), convoy: pts(b?.convoy), gas: pts(b?.gas),
+      heli: pts(b?.heli), convoy: pts(b?.convoy), gas: pts(b?.gas), breach: breaches(b?.breach),
       fog: Number(b?.fog) || 0, ovc: Number(b?.ovc) || 0, wind: Number(b?.wind) || 0,
       dbg: String(b?.dbg || "").slice(0, 1600),
     };
@@ -61,6 +66,10 @@ export default async function handler(req, res) {
     gas: e.gas.filter((p) => !nearBunker(p)).map(([x, z]) => ({ x, z, r: 120 })),
     heli: e.heli.map((p) => fuzz(p, "heli")),
     convoy: e.convoy.map((p) => fuzz(p, "convoy")),
+    // vault breaches: rough area (300 m circle), tier and minutes since it was opened
+    breach: (e.breach || [])
+      .map(([x, z, t, age]) => ({ ...fuzz([x, z], "breach", 300, 200), tier: TIERS[t], age: Math.round(age + (Date.now() - e.t) / 1000) }))
+      .filter((b) => b.age < BREACH_TTL),
     sandstorm,
   });
 }
