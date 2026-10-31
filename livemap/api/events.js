@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       t: Date.now(),
       heli: pts(b?.heli), convoy: pts(b?.convoy), gas: pts(b?.gas),
       fog: Number(b?.fog) || 0, ovc: Number(b?.ovc) || 0, wind: Number(b?.wind) || 0,
-      dbg: String(b?.dbg || "").slice(0, 800),
+      dbg: String(b?.dbg || "").slice(0, 1600),
     };
     await saveJSON(KEY, out, TTL);
     return res.status(200).json({ ok: true, heli: out.heli.length, convoy: out.convoy.length, gas: out.gas.length });
