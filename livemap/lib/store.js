@@ -16,7 +16,7 @@ export const storeEnvNames = envKeys.filter((n) => /KV|REDIS|UPSTASH|STORAGE/i.t
 export const storeKind = REDIS_URL ? "redis" : REST_URL && REST_TOKEN ? "redis-rest" : "memory";
 
 const g = globalThis;
-const mem = g.__dzMem || (g.__dzMem = { value: null, exp: 0 });
+const mem = g.__dzMem || (g.__dzMem = {});
 
 async function tcp() {
   // reuse one connection per warm function instance
@@ -38,17 +38,20 @@ async function rest(cmd) {
   return (await r.json()).result;
 }
 
-export async function savePositions(obj) {
+export async function saveJSON(key, obj, ttl) {
   const s = JSON.stringify(obj);
-  if (storeKind === "redis") return (await tcp()).set(KEY, s, { EX: TTL });
-  if (storeKind === "redis-rest") return rest(["SET", KEY, s, "EX", String(TTL)]);
-  mem.value = s; mem.exp = Date.now() + TTL * 1000;
+  if (storeKind === "redis") return (await tcp()).set(key, s, { EX: ttl });
+  if (storeKind === "redis-rest") return rest(["SET", key, s, "EX", String(ttl)]);
+  mem[key] = { value: s, exp: Date.now() + ttl * 1000 };
 }
 
-export async function loadPositions() {
+export async function loadJSON(key) {
   let s = null;
-  if (storeKind === "redis") s = await (await tcp()).get(KEY);
-  else if (storeKind === "redis-rest") s = await rest(["GET", KEY]);
-  else if (mem.exp > Date.now()) s = mem.value;
+  if (storeKind === "redis") s = await (await tcp()).get(key);
+  else if (storeKind === "redis-rest") s = await rest(["GET", key]);
+  else if (mem[key] && mem[key].exp > Date.now()) s = mem[key].value;
   return s ? JSON.parse(s) : null;
 }
+
+export const savePositions = (obj) => saveJSON(KEY, obj, TTL);
+export const loadPositions = () => loadJSON(KEY);

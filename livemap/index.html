@@ -66,6 +66,12 @@ ol.dirs li:last-child{border-bottom:0}
 .ic{font-size:1.05rem;line-height:1.2;text-align:center;color:var(--ember)}
 .dd{font-family:var(--mono);color:var(--dust);font-size:.85rem;white-space:nowrap}
 .empty{color:var(--dust);font-size:.92rem;font-style:italic}
+.evlist{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.evlist li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:.92rem}
+.evlist .sw{width:14px;height:14px;border-radius:50%;border:2px solid currentColor}
+.evlist .n{font-family:var(--cond);font-weight:700;color:var(--ember)}
+.storm{margin-top:8px;padding:8px 10px;border-radius:6px;background:rgba(214,170,90,.18);border:1px solid #d6aa5a;color:#f0d39b;font-family:var(--cond);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.evtag{font-family:var(--cond);font-weight:700;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:rgba(0,0,0,.55);color:#fff;white-space:nowrap}
 .toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--panel-2);border:1px solid var(--ember);color:var(--sand);padding:10px 16px;border-radius:6px;font-family:var(--cond);letter-spacing:.04em;z-index:2000;box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:90vw}
 /* map bits */
 .leaflet-container{background:#0f0c0a;font-family:var(--body)}
@@ -103,6 +109,11 @@ ol.dirs li:last-child{border-bottom:0}
         <button class="btn" id="followBtn" aria-pressed="false" type="button">Follow me</button>
         <button class="btn" id="centerBtn" type="button">Find me</button>
       </div>
+    </section>
+    <section>
+      <h2>Danger &amp; events</h2>
+      <div class="card" id="evCard"><span class="empty">Sign in with Steam to see live events.</span></div>
+      <div class="row" style="margin-top:8px"><button class="btn" id="evBtn" aria-pressed="true" type="button">Show events</button></div>
     </section>
     <section>
       <h2>Route</h2>
@@ -154,7 +165,7 @@ const nearestTown=(x,z,max)=>{let b=null,bd=max;for(const t of towns){const d=Ma
 const POIS=[
   ['Main trader hub',6605,6995,'trader'],['Drug trader',6612,4573,'trader'],['Hunting trader',6325,4782,'trader'],
   ['Black Market',3908,9351,'bm'],['Collectables & High-end',1828,7596,'trader'],
-  ['North Airfield bunker',5840,11302,'bunker'],['Underground Dam bunker',1373,8775,'bunker'],
+  ['North Airfield bunker',5840,11302,'bunker'],['Underground Dam bunker',1373,8775,'bunker'],['East underground lab',10325,8215,'bunker'],
   ['Rasman airbase',5650,11190,'air'],['Southern airstrip',7940,1900,'air']];
 const nearestPoi=(x,z,max)=>{let b=null,bd=max;for(const p of POIS){const d=Math.hypot(p[1]-x,p[2]-z);if(d<bd){bd=d;b=p;}}return b;};
 const placeName=(x,z,arrive)=>{const p=nearestPoi(x,z,arrive?350:150); if(p) return (arrive?'at ':'at ')+p[0]; const t=nearestTown(x,z,900);return t?('near '+t[0]):('grid '+grid(x,z));};
@@ -171,6 +182,35 @@ for(const [n,x,z,k] of POIS){
 const roadLayer=L.layerGroup();
 for(const e of roads.edges) L.polyline(e.pts.map(p=>ll(p[0],p[1])),{color:e.major?'#ffb347':'#e9dcc6',weight:e.major?3:2,opacity:.75,interactive:false}).addTo(roadLayer);
 $('roadsBtn').onclick=()=>{const on=$('roadsBtn').getAttribute('aria-pressed')!=='true';$('roadsBtn').setAttribute('aria-pressed',on);on?roadLayer.addTo(map):roadLayer.remove();};
+
+// ---------- live events ----------
+const BUNKER_GAS=[['Toxic: Underground Dam bunker',1320,8750,200],['Toxic: North Airfield bunker',5830,11310,150],['Toxic: East underground lab',10325,8215,100]];
+const evLayer=L.layerGroup().addTo(map); let evOn=true, evData=null;
+const ring=(x,z,r,o)=>L.circle(ll(x,z),Object.assign({radius:r,interactive:true},o));
+function drawEvents(){
+  evLayer.clearLayers();
+  for(const [n,x,z,r] of BUNKER_GAS) ring(x,z,r,{color:'#7fc241',weight:2,fillColor:'#7fc241',fillOpacity:.22,dashArray:'4 4'}).bindTooltip(n+' (always gassed: mask + suit)').addTo(evLayer);
+  if(!evData||!evData.live) return;
+  for(const g of evData.gas) ring(g.x,g.z,g.r,{color:'#b8e04a',weight:2,fillColor:'#b8e04a',fillOpacity:.35}).bindTooltip('Gas strike: active now').addTo(evLayer);
+  for(const h of evData.heli) ring(h.x,h.z,h.r,{color:'#ff6b3d',weight:2,fillColor:'#ff6b3d',fillOpacity:.10,dashArray:'8 6'}).bindTooltip('Heli crash somewhere in here (look for smoke). Heavy military infected.').addTo(evLayer);
+  for(const c of evData.convoy) ring(c.x,c.z,c.r,{color:'#ffb347',weight:2,fillColor:'#ffb347',fillOpacity:.08,dashArray:'2 6'}).bindTooltip('Military convoy somewhere on the roads in here. Heavy military infected.').addTo(evLayer);
+}
+function renderEvCard(){
+  const c=$('evCard');
+  if(!signedIn){c.innerHTML='<span class="empty">Sign in with Steam to see live events.</span>';return;}
+  const d=evData, live=d&&d.live;
+  const row=(col,label,n)=>`<li><span class="sw" style="color:${col}"></span><span>${label}</span><span class="n">${n}</span></li>`;
+  c.innerHTML=(live&&d.sandstorm?'<div class="storm">⚠ Sandstorm in progress</div>':'')+
+    `<ul class="evlist">${row('#ff6b3d','Heli crash search areas',live?d.heli.length:'–')}${row('#ffb347','Convoy search areas',live?d.convoy.length:'–')}${row('#b8e04a','Gas strikes',live?d.gas.length:'–')}${row('#7fc241','Toxic bunkers (always)',3)}</ul>`+
+    `<p class="help" style="margin:8px 0 0">${live?'Updated '+d.age+'s ago. Crashes and convoys show a rough area only: find the smoke.':'Waiting for the server to report events.'}</p>`;
+}
+async function pollEvents(){
+  if(!signedIn){evData=null;drawEvents();renderEvCard();return;}
+  try{evData=await fetch('/api/events',{cache:'no-store'}).then(r=>r.json());}catch{evData=null;}
+  drawEvents(); renderEvCard();
+}
+$('evBtn').onclick=()=>{evOn=!evOn;$('evBtn').setAttribute('aria-pressed',evOn);evOn?evLayer.addTo(map):evLayer.remove();};
+drawEvents();
 
 // ---------- road graph ----------
 const N=roads.nodes.length; const adj=Array.from({length:N},()=>[]);
@@ -364,9 +404,10 @@ async function health(){
 const qs=new URLSearchParams(location.search);
 if(qs.get('login')==='ok'){toast('Signed in through Steam');history.replaceState(null,'','/');}
 if(qs.get('login')==='failed'){toast('Steam sign-in did not complete');history.replaceState(null,'','/');}
-update(); poll(); health();
+update(); poll().then(pollEvents); health();
 setInterval(()=>{ if(!document.hidden) poll(); },7000);
 setInterval(()=>{ if(!document.hidden) health(); },30000);
+setInterval(()=>{ if(!document.hidden) pollEvents(); },30000);
 window.__dz={route,snap,roads,map,addWp,setMe}; // for testing
 })();
 </script>
