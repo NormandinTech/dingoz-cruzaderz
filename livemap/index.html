@@ -80,7 +80,7 @@ ol.dirs li:last-child{border-bottom:0}
 .coords{position:absolute;right:10px;bottom:10px;z-index:1000;background:rgba(20,17,14,.85);border:1px solid var(--line);border-radius:6px;padding:5px 9px;font-family:var(--mono);font-size:.82rem;color:var(--dust);pointer-events:none}
 @media (max-width:860px){
   main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
-  aside{border-left:0;border-top:1px solid var(--line);max-height:45vh}
+  aside{border-left:0;border-top:1px solid var(--line);max-height:36vh}
   header h1{font-size:1.1rem}
   .coords{display:none}
 }
@@ -164,7 +164,7 @@ const poiLayer=L.layerGroup().addTo(map);
 for(const [n,x,z,k] of POIS){
   const m=L.circleMarker(ll(x,z),{radius:7,color:'#14110e',weight:2,fillColor:poiColor[k],fillOpacity:1}).addTo(poiLayer);
   m.bindTooltip(n,{direction:'top',offset:[0,-6]});
-  m.on('click',ev=>{L.DomEvent.stopPropagation(ev); addWp(x,z); toast('Route to '+n+' added');});
+  m.on('click',ev=>{L.DomEvent.stopPropagation(ev); addWp(x,z); toast('Route to '+n+' added'); fitRoute();});
 }
 // road overlay (optional)
 const roadLayer=L.layerGroup();
@@ -308,6 +308,7 @@ function update(){
   const ol=$('dirs'); ol.innerHTML='';
   for(const s of allDirs){const li=document.createElement('li');li.innerHTML=`<span class="ic">${s.ic}</span><span>${s.t}</span><span class="dd">${s.d?fmtD(s.d):''}</span>`;ol.appendChild(li);}
 }
+function fitRoute(){ const b=L.latLngBounds([]); routeLayer.eachLayer(l=>{ if(l.getBounds) b.extend(l.getBounds()); }); if(b.isValid()) map.fitBounds(b,{padding:[30,30],maxZoom:-1}); }
 function clearDirs(){ $('sumSec').hidden=true; $('dirs').innerHTML='<li class="empty" style="display:block;border:0">Add a destination to get directions.</li>'; }
 function addWp(x,z){
   if(wps.length>=8){toast('Up to 8 waypoints');return;}
@@ -347,7 +348,7 @@ async function poll(){
 function setMe(p){
   const had=!!me; me=p?{x:p.x,z:p.z,d:p.d}:null;
   if(me){ if(!meMarker) meMarker=L.marker(ll(me.x,me.z),{icon:meIcon(me.d),interactive:false,zIndexOffset:1000}).addTo(map); else {meMarker.setLatLng(ll(me.x,me.z));meMarker.setIcon(meIcon(me.d));}
-    if(firstFix){map.setView(ll(me.x,me.z),-1);firstFix=false;} else if(follow) map.panTo(ll(me.x,me.z)); }
+    if(firstFix){map.setView(ll(me.x,me.z),window.innerWidth<860?-2.75:-1.5);firstFix=false;} else if(follow) map.panTo(ll(me.x,me.z)); }
   else if(meMarker){map.removeLayer(meMarker);meMarker=null;}
   if(had!==!!me) relabel();
   update();
