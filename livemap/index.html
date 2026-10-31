@@ -174,7 +174,7 @@ function slice(e,fromAlong,toAlong){ // polyline between two distances along edg
     acc=s1;}
   return rev?out.reverse():out;
 }
-const OFF=2.2; // off-road cost multiplier (slower, rougher)
+const OFF=3.5; // off-road cost multiplier (slower, rougher)
 function route(A,B){ // A,B: [x,z]
   const sa=snap(A[0],A[1]), sb=snap(B[0],B[1]);
   const direct=segLen(A,B);
