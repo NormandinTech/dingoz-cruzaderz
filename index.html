@@ -98,6 +98,8 @@ section.band{padding-block:clamp(48px,7vw,84px)}
 .map svg{display:block;width:100%;height:auto;max-width:100%}
 .imaplink{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px;padding:12px 14px;border:1px solid rgba(255,179,71,.45);border-radius:6px;background:rgba(255,179,71,.10);font-family:var(--cond);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:1rem;color:var(--ember);text-decoration:none}
 .imaplink:hover{background:rgba(255,179,71,.2)}
+.livelink{background:var(--fire);color:#1a0d05;border-color:var(--fire)}
+.livelink:hover{background:var(--ember)}
 .legend{display:flex;flex-direction:column;gap:0;min-width:0}
 .loc{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--line)}
 .loc:first-child{border-top:1px solid var(--line)}
@@ -286,6 +288,7 @@ footer .brand{font-family:var(--display);color:var(--sand);font-size:1.1rem;lett
           <div id="view-tiers" role="tabpanel" aria-labelledby="tab-tiers" hidden>
             <img class="tiermap" src="tier-map.jpg" alt="Takistan Sequel loot tier map: Tier 1 and the spawn zone in the south, Tier 2 across the middle, Tier 3 in the north, with the bunker run marked in the north-west" width="1280" height="1280" loading="lazy">
           </div>
+          <a class="imaplink livelink" href="https://dingoz-cruzaderz-livemap.vercel.app/" target="_blank" rel="noopener">📍 Live map: see where you are &amp; plot a route ↗</a>
           <a class="imaplink" href="https://marthieson.github.io/DayZ-tsiamap/" target="_blank" rel="noopener">Open the interactive Takistan Sequel map ↗</a>
         </div>
         <div class="legend">
