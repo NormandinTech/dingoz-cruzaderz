@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DayZ Route Planner</title>
-<meta name="description" content="Free DayZ route planner: pick a map, tap where you are and where you want to go, and get a road route with turn-by-turn directions.">
+<title>Z Wayfinder</title>
+<meta name="description" content="Z Wayfinder, a free route planner for DayZ players: pick a map, tap where you are and where you want to go, and get a road route with turn-by-turn directions.">
 <meta name="theme-color" content="#14110e">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -97,7 +97,7 @@ ol.dirs li:last-child{border-bottom:0}
 </head>
 <body>
 <header>
-  <h1>DayZ <span>Route Planner</span></h1>
+  <h1>Z <span>Wayfinder</span></h1>
   <label class="pick"><span class="sr">Map</span><select id="mapSel" aria-label="Choose a map"></select></label>
   <div class="grow"></div>
   <a class="btn btn-live" id="liveBtn" href="#live">📍 Live position · $2/mo</a>
@@ -130,6 +130,7 @@ ol.dirs li:last-child{border-bottom:0}
       <div class="card"><p class="help" style="margin:0">See your own dot move on the map while you play, with routes starting from where you stand. $2/month, on servers that run the free position script. Only you ever see your dot.</p><p class="help" style="margin:8px 0 0;color:var(--ember)">Coming soon.</p></div>
     </section>
     <p class="help" style="font-size:.82rem" id="credit"></p>
+    <p class="help" style="font-size:.78rem">Z Wayfinder is a fan-made tool, not affiliated with or authorized by Bohemia Interactive a.s. DayZ is a trademark of Bohemia Interactive a.s.</p>
   </aside>
 </main>
 
@@ -160,7 +161,7 @@ $('roadsBtn').onclick=()=>{const on=$('roadsBtn').getAttribute('aria-pressed')!=
 async function loadMap(id){
   const m=MAPS.find(x=>x.id===id)||MAPS[0]; cur=m; sel.value=m.id;
   history.replaceState(null,'','?map='+m.id+location.hash);
-  document.title=m.name+' Route Planner · DayZ';
+  document.title=m.name+' · Z Wayfinder';
   clearAll();
   SIZE=m.size; const B=m.bounds||[[0,0],[SIZE,SIZE]];
   if(imgLayer) map.removeLayer(imgLayer);

@@ -1,4 +1,4 @@
-# DayZ Route Planner (work in progress)
+# Z Wayfinder (work in progress)
 
 Route planning for any DayZ map. Server owners bring their own map image; nothing here ships Bohemia or mod-author map art.
 
