@@ -184,12 +184,12 @@ for(const e of roads.edges) L.polyline(e.pts.map(p=>ll(p[0],p[1])),{color:e.majo
 $('roadsBtn').onclick=()=>{const on=$('roadsBtn').getAttribute('aria-pressed')!=='true';$('roadsBtn').setAttribute('aria-pressed',on);on?roadLayer.addTo(map):roadLayer.remove();};
 
 // ---------- live events ----------
-const BUNKER_GAS=[['Toxic: Underground Dam bunker',1320,8750,200],['Toxic: North Airfield bunker',5830,11310,150],['Toxic: East underground lab',10325,8215,100]];
+const BUNKER_GAS=[['Toxic: Underground Dam bunker',1320,8750,200],['Toxic: North Airfield bunker',5830,11310,150],['Toxic: East underground lab',10325,8215,100],['Toxic zone: high-tier loot',6004,11790,120],['Toxic zone: top-tier loot',11560,10870,130]];
 const evLayer=L.layerGroup().addTo(map); let evOn=true, evData=null;
 const ring=(x,z,r,o)=>L.circle(ll(x,z),Object.assign({radius:r,interactive:true},o));
 function drawEvents(){
   evLayer.clearLayers();
-  for(const [n,x,z,r] of BUNKER_GAS) ring(x,z,r,{color:'#7fc241',weight:2,fillColor:'#7fc241',fillOpacity:.22,dashArray:'4 4'}).bindTooltip(n+' (always gassed: mask + suit)').addTo(evLayer);
+  for(const [n,x,z,r] of BUNKER_GAS) ring(x,z,r,{color:'#7fc241',weight:2,fillColor:'#7fc241',fillOpacity:.22,dashArray:'4 4'}).bindTooltip(n+' (always gassed: bring a mask, filters and a suit)').addTo(evLayer);
   if(!evData||!evData.live) return;
   for(const g of evData.gas) ring(g.x,g.z,g.r,{color:'#b8e04a',weight:2,fillColor:'#b8e04a',fillOpacity:.35}).bindTooltip('Gas strike: active now').addTo(evLayer);
   for(const h of evData.heli) ring(h.x,h.z,h.r,{color:'#ff6b3d',weight:2,fillColor:'#ff6b3d',fillOpacity:.10,dashArray:'8 6'}).bindTooltip('Heli crash somewhere in here (look for smoke). Heavy military infected.').addTo(evLayer);
@@ -201,7 +201,7 @@ function renderEvCard(){
   const d=evData, live=d&&d.live;
   const row=(col,label,n)=>`<li><span class="sw" style="color:${col}"></span><span>${label}</span><span class="n">${n}</span></li>`;
   c.innerHTML=(live&&d.sandstorm?'<div class="storm">⚠ Sandstorm in progress</div>':'')+
-    `<ul class="evlist">${row('#ff6b3d','Heli crash search areas',live?d.heli.length:'–')}${row('#ffb347','Convoy search areas',live?d.convoy.length:'–')}${row('#b8e04a','Gas strikes',live?d.gas.length:'–')}${row('#7fc241','Toxic bunkers (always)',3)}</ul>`+
+    `<ul class="evlist">${row('#ff6b3d','Heli crash search areas',live?d.heli.length:'–')}${row('#ffb347','Convoy search areas',live?d.convoy.length:'–')}${row('#b8e04a','Gas strikes',live?d.gas.length:'–')}${row('#7fc241','Toxic zones (always)',5)}</ul>`+
     `<p class="help" style="margin:8px 0 0">${live?'Updated '+d.age+'s ago. Crashes and convoys show a rough area only: find the smoke.':'Waiting for the server to report events.'}</p>`;
 }
 async function pollEvents(){
