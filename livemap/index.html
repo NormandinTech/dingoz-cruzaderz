@@ -247,7 +247,7 @@ function directions(legs,dest){
       if(run>0){out.push({ic:'↑',t:'Follow the road',d:run});run=0;}
       const b=bearing(l.pts[0],l.pts[l.pts.length-1]);
       const toRoad=legs[i+1]&&legs[i+1].type==='road';
-      out.push({ic:'⇢',t:(i===0?'Head ':'Go ')+compass(b)+' off-road'+(toRoad?' to the road':' to '+placeName(dest[0],dest[1]).replace(/^near /,'')),d:L_});
+      out.push({ic:'⇢',t:(i===0?'Head ':'Go ')+compass(b)+' off-road'+(toRoad?' to the road':' to '+placeName(dest[0],dest[1],true).replace(/^(near|at) /,'')),d:L_});
       return;
     }
     run+=L_;
