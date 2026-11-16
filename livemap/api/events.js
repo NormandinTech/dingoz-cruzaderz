@@ -25,6 +25,13 @@ function keyOk(req) {
   const want = process.env.INGEST_KEY || "";
   return want && key.length === want.length && crypto.timingSafeEqual(Buffer.from(key), Buffer.from(want));
 }
+// The CruZaderZ Admin Panel reads the exact events (staff only) with its own key,
+// PANEL_READ_KEY, which can only read: it can't post events like INGEST_KEY can.
+function panelKeyOk(req) {
+  const key = String(req.query.key || "");
+  const want = process.env.PANEL_READ_KEY || "";
+  return want && key.length === want.length && crypto.timingSafeEqual(Buffer.from(key), Buffer.from(want));
+}
 const pts = (a) => (Array.isArray(a) ? a : []).slice(0, 100)
   .map((p) => [Number(p?.[0]), Number(p?.[1])])
   .filter(([x, z]) => isFinite(x) && isFinite(z) && x > -500 && x < 13500 && z > -500 && z < 13500);
@@ -53,7 +60,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, heli: out.heli.length, convoy: out.convoy.length, gas: out.gas.length });
   }
   if (req.method !== "GET") return res.status(405).json({ error: "GET or POST" });
-  if (req.query.debug && keyOk(req)) return res.status(200).json(await loadJSON(KEY).catch(() => null));
+  if (req.query.debug && (keyOk(req) || panelKeyOk(req))) return res.status(200).json(await loadJSON(KEY).catch(() => null));
   if (!readSession(req)) return res.status(200).json({ signedIn: false });
   const e = await loadJSON(KEY).catch(() => null);
   if (!e) return res.status(200).json({ signedIn: true, live: false });
